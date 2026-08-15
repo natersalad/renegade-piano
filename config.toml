@@ -7,5 +7,5 @@ period_size = 128
 device = "Arturia"
 
 [synth]
-soundfont = "/usr/local/share/renegade-piano/soundfonts/piano.sf2"
+soundfont = "/usr/share/sounds/sf2/TimGM6mb.sf2"
 gain = 0.7
