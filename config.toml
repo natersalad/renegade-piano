@@ -1,0 +1,11 @@
+[audio]
+device = "Steinberg"
+sample_rate = 48000
+period_size = 128
+
+[midi]
+device = "Arturia"
+
+[synth]
+soundfont = "/usr/local/share/renegade-piano/soundfonts/piano.sf2"
+gain = 0.7
