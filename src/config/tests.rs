@@ -1,4 +1,5 @@
 use super::{Config, ConfigError};
+use std::path::PathBuf;
 
 const VALID_CONFIG: &str = r#"
 [audio]
@@ -22,7 +23,7 @@ fn parses_valid_configuration() {
     assert_eq!(config.audio.sample_rate, 48_000);
     assert_eq!(config.audio.period_size, 128);
     assert_eq!(config.midi.device, "Arturia");
-    assert_eq!(config.synth.soundfont, "/sounds/piano.sf2");
+    assert_eq!(config.synth.soundfont, PathBuf::from("/sounds/piano.sf2"));
     assert_eq!(config.synth.gain, 0.7);
 }
 

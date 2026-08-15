@@ -1,6 +1,6 @@
 use serde::Deserialize;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use thiserror::Error;
 
 #[cfg(test)]
@@ -27,7 +27,7 @@ pub struct MidiConfig {
 
 #[derive(Debug, Deserialize)]
 pub struct SynthConfig {
-    pub soundfont: String,
+    pub soundfont: PathBuf,
     pub gain: f32,
 }
 
@@ -83,7 +83,7 @@ impl Config {
             ));
         }
 
-        if self.synth.soundfont.trim().is_empty() {
+        if self.synth.soundfont.as_os_str().is_empty() {
             return Err(ConfigError::Validation(
                 "synth.soundfont cannot be empty".to_string(),
             ));

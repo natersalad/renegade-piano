@@ -23,10 +23,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     match cli.command {
         Commands::Check(args) => {
-            Config::load(&args.config)?;
+            let config = Config::load(&args.config)?;
             println!("✓ configuration: {}", args.config.display());
 
-            let report = SystemReport::inspect();
+            let report = SystemReport::inspect(&config.synth.soundfont);
             report.print();
             report.ensure_ready()?;
         }

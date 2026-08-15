@@ -1,4 +1,6 @@
+use std::fs;
 use std::io;
+use std::path::Path;
 use std::process::Command;
 use thiserror::Error;
 
@@ -12,42 +14,52 @@ const PROGRAMS: &[(&str, &str)] = &[
 ];
 
 #[derive(Debug, PartialEq, Eq)]
-enum ProgramStatus {
+enum RequirementStatus {
     Available,
     Missing,
     Failed(String),
 }
 
 #[derive(Debug, PartialEq, Eq)]
-struct ProgramCheck {
+struct RequirementCheck {
     name: &'static str,
-    purpose: &'static str,
-    status: ProgramStatus,
+    detail: String,
+    status: RequirementStatus,
 }
 
 #[derive(Debug)]
 pub struct SystemReport {
-    checks: Vec<ProgramCheck>,
+    checks: Vec<RequirementCheck>,
 }
 
 #[derive(Debug, Error)]
-#[error("one or more required system programs are unavailable")]
+#[error("one or more system requirements are unavailable")]
 pub struct SystemCheckError;
 
 impl SystemReport {
-    pub fn inspect() -> Self {
-        Self::inspect_with(probe_program)
+    pub fn inspect(soundfont: &Path) -> Self {
+        Self::inspect_with(soundfont, probe_program, probe_soundfont)
     }
 
-    fn inspect_with(mut probe: impl FnMut(&str) -> ProgramStatus) -> Self {
-        let checks = PROGRAMS
+    fn inspect_with(
+        soundfont: &Path,
+        mut program_probe: impl FnMut(&str) -> RequirementStatus,
+        mut soundfont_probe: impl FnMut(&Path) -> RequirementStatus,
+    ) -> Self {
+        let mut checks: Vec<_> = PROGRAMS
             .iter()
-            .map(|&(name, purpose)| ProgramCheck {
+            .map(|&(name, purpose)| RequirementCheck {
                 name,
-                purpose,
-                status: probe(name),
+                detail: purpose.to_string(),
+                status: program_probe(name),
             })
             .collect();
+
+        checks.push(RequirementCheck {
+            name: "soundfont",
+            detail: soundfont.display().to_string(),
+            status: soundfont_probe(soundfont),
+        });
 
         Self { checks }
     }
@@ -55,20 +67,20 @@ impl SystemReport {
     fn is_ready(&self) -> bool {
         self.checks
             .iter()
-            .all(|check| check.status == ProgramStatus::Available)
+            .all(|check| check.status == RequirementStatus::Available)
     }
 
     pub fn print(&self) {
         for check in &self.checks {
             match &check.status {
-                ProgramStatus::Available => {
-                    println!("✓ {}: {}", check.name, check.purpose);
+                RequirementStatus::Available => {
+                    println!("✓ {}: {}", check.name, check.detail);
                 }
-                ProgramStatus::Missing => {
-                    println!("✗ {}: not found ({})", check.name, check.purpose);
+                RequirementStatus::Missing => {
+                    println!("✗ {}: not found ({})", check.name, check.detail);
                 }
-                ProgramStatus::Failed(reason) => {
-                    println!("✗ {}: {} ({})", check.name, reason, check.purpose);
+                RequirementStatus::Failed(reason) => {
+                    println!("✗ {}: {} ({})", check.name, reason, check.detail);
                 }
             }
         }
@@ -83,10 +95,19 @@ impl SystemReport {
     }
 }
 
-fn probe_program(program: &str) -> ProgramStatus {
+fn probe_program(program: &str) -> RequirementStatus {
     match Command::new(program).arg("--version").output() {
-        Ok(_) => ProgramStatus::Available,
-        Err(error) if error.kind() == io::ErrorKind::NotFound => ProgramStatus::Missing,
-        Err(error) => ProgramStatus::Failed(error.to_string()),
+        Ok(_) => RequirementStatus::Available,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => RequirementStatus::Missing,
+        Err(error) => RequirementStatus::Failed(error.to_string()),
+    }
+}
+
+fn probe_soundfont(path: &Path) -> RequirementStatus {
+    match fs::metadata(path) {
+        Ok(metadata) if metadata.is_file() => RequirementStatus::Available,
+        Ok(_) => RequirementStatus::Failed("not a regular file".to_string()),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => RequirementStatus::Missing,
+        Err(error) => RequirementStatus::Failed(error.to_string()),
     }
 }
