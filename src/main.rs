@@ -1,15 +1,24 @@
+mod cli;
 mod config;
 
+use clap::Parser;
+use cli::{Cli, Commands};
 use config::Config;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let path = std::env::args()
-        .nth(1)
-        .unwrap_or_else(|| "config.toml".to_string());
+    let cli = Cli::parse();
 
-    let config = Config::load(path)?;
+    match cli.command {
+        Commands::Check(args) => {
+            Config::load(&args.config)?;
+            println!("configuration is valid: {}", args.config.display());
+        }
+        Commands::Run(args) => {
+            let config = Config::load(args.config)?;
 
-    println!("{config:#?}");
+            println!("{config:#?}");
+        }
+    }
 
     Ok(())
 }
