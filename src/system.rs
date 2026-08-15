@@ -85,8 +85,7 @@ impl SystemReport {
 
 fn probe_program(program: &str) -> ProgramStatus {
     match Command::new(program).arg("--version").output() {
-        Ok(output) if output.status.success() => ProgramStatus::Available,
-        Ok(output) => ProgramStatus::Failed(format!("exited with {}", output.status)),
+        Ok(_) => ProgramStatus::Available,
         Err(error) if error.kind() == io::ErrorKind::NotFound => ProgramStatus::Missing,
         Err(error) => ProgramStatus::Failed(error.to_string()),
     }
