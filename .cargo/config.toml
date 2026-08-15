@@ -1,0 +1,2 @@
+[alias]
+sync = ["run", "--quiet", "--bin", "sync", "--"]
